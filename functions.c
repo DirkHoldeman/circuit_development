@@ -93,7 +93,7 @@ void adc_init() {
     //cal_sum = ADC0_CLMS + ADC0_CLM4 + ADC0_CLM3 + ADC0_CLM2 + ADC0_CLM1 + ADC0_CLM0;
     //cal_sum = (cal_sum / 2) | 0x8000;
     //ADC0_MG = cal_sum;
-    if(varthree) {
+/*    if(varthree) {
 	varthree++;
     }
     else {
@@ -102,7 +102,7 @@ void adc_init() {
     char *stringvarthree = int_to_string(varthree);
     display_string(stringvarthree);
     wait_ms(1000);
-    lcd_command(0x01);
+    lcd_command(0x01);*/
 }
 
 uint16_t adc_convert() {
@@ -142,7 +142,11 @@ uint32_t voltage_to_ohms(uint16_t volts) {
     return (14000000 / ((volts * 1000) / 3000) - 14000);
 }
 
-uint8_t debounce_read(uint8_t pin, uint8_t port){
+uint8_t debounce_read(uint8_t port, uint8_t pin){
+    switch_release_confidence = 0;
+    switch_press_confidence = 0;
+    switch_pressed = 0;
+
     switch(port) {
 	case 0:
 	    uint32_t *input_port = GPIOA_PDIR;
@@ -162,10 +166,25 @@ uint8_t debounce_read(uint8_t pin, uint8_t port){
 	default:
 	    break;
     }
-    varname = 1;
-    while(varname) {
+    while(1) {
 	if(input_port & (1<<pin)) {
-	    
+	    switch_release_confidence++;
+	    switch_press_confidence = 0;
+	    if(switch_release_confidence > 500) {
+		if(switch_pressed == 1) {
+		    return 1;
+		}
+		else {
+		    return 0;
+		}
+	    }
+	}
+	else {
+	    switch_press_confidence++;
+	    switch_release_confidence = 0;
+	    if(switch_press_confidence > 500) {
+		    switch_pressed = 1;
+	    }
 	}
     }
 }
@@ -177,13 +196,7 @@ void alarm_setup(void) {
     if(RTC_SR & RTC_SR_TIF_MASK) {
          RTC_TSR = 0x00;
     }
-    switch_release_confidence = 0;
-    switch_press_confidence = 0;
-    switch_pressed = 0;
     digit_switch = 0;
-    pressed = 0;
-    release_confidence = 0;
-    press_confidence = 0;
     twilight_hour = 0;
     twilight_minute_one = 0;
     twilight_minute_two = 0;
@@ -192,139 +205,56 @@ void alarm_setup(void) {
     startup_minute_two = 0;
     k = 1;
     while(k) {
-        if(GPIOA_PDIR & (1<<13)) {
-            if(GPIOA_PDIR & (1<<12)) {
-                switch_release_confidence++;
-                switch_press_confidence = 0;
-                if(switch_release_confidence > 500) {
-                    switch_pressed = 0;
-                    switch_release_confidence = 0;
-                }
+	if(GPIOA_PDIR & (1<<13)) {
+            if(debounce_read(0, 12)) {
+		digit_switch++;
             }
-            else {
-                switch_press_confidence++;
-                switch_release_confidence = 0;
-                if(switch_press_confidence > 500) {
-                    if(switch_pressed == 0){
-                        digit_switch++;
-                        switch_pressed = 1;
-                        switch_press_confidence = 0;
-                    }
-                }
+            if(debounce_read(1, 2)) {
+		if(digit_switch == 0) {
+		    twilight_hour++;
+		    display_char(twilight_hour + '0');
+		}
+		else if(digit_switch == 1) {
+		    twilight_minute_one++;
+		    display_char(twilight_minute_one + '0');
+		}
+		else if(digit_switch == 2) {
+		    twilight_minute_two++;
+		    display_char(twilight_minute_two + '0');
+		}
+		else {
+		    digit_switch = 0;
+		}
             }
-            if(GPIOB_PDIR & (1<<2)) {
-                release_confidence++;
-                press_confidence = 0;
-                if(release_confidence > 500) {
-                    pressed = 0;
-                    release_confidence = 0;
-                }
-            }
-            else {
-                press_confidence++;
-                release_confidence = 0;
-                if(press_confidence > 500) {
-                    if(pressed == 0) {
-                        pressed = 1;
-                        press_confidence = 0;
-                        if(digit_switch == 0) {
-                            twilight_hour++;
-                            lcd_command(0x30);
-                            lcd_command(0x0c);
-                            lcd_command(0x01);
-                            display_char(twilight_hour + '0');
-                        }
-                        else if(digit_switch == 1) {
-                            twilight_minute_one++;
-                            lcd_command(0x30);
-                            lcd_command(0x0c);
-                            lcd_command(0x01);
-                            display_char(twilight_minute_one + '0');
-                        }
-                        else if(digit_switch == 2) {
-                            twilight_minute_two++;
-                            lcd_command(0x30);
-                            lcd_command(0x0c);
-                            lcd_command(0x01);
-                            display_char(twilight_minute_two + '0');
-                        }
-                        else {
-                            digit_switch = 0;
-                        }
-                    }
-                }
-            }
-        }
+	}
         else {
-            if(GPIOA_PDIR & (1<<12)) {
-                switch_release_confidence++;
-                switch_press_confidence = 0;
-                if(switch_release_confidence > 500) {
-                    switch_pressed = 0;
-                    switch_release_confidence = 0;
-                }
-            }
-            else {
-                switch_press_confidence++;
-                switch_release_confidence = 0;
-                if(switch_press_confidence > 500) {
-                    if(switch_pressed == 0){
-                        digit_switch++;
-                        switch_pressed = 1;
-                        switch_press_confidence = 0;
-                    }
-                }
-            }
-            if(GPIOB_PDIR & (1<<2)) {
-                release_confidence++;
-                press_confidence = 0;
-                if(release_confidence > 500) {
-                    pressed = 0;
-                    release_confidence = 0;
-                }
-            }
-            else {
-                press_confidence++;
-                release_confidence = 0;
-                if(press_confidence > 500) {
-                    if(pressed == 0) {
-                        pressed = 1;
-                        press_confidence = 0;
-                        if(digit_switch == 0) {
-                            startup_hour++;
-                            lcd_command(0x30);
-                            lcd_command(0x0c);
-                            lcd_command(0x01);
-                            display_char(startup_hour + '0');
-                        }
-                        else if(digit_switch == 1) {
-                            startup_minute_one++;
-                            lcd_command(0x30);
-                            lcd_command(0x0c);
-                            lcd_command(0x01);
-                            display_char(startup_minute_one + '0');
-                        }
-                        else if(digit_switch == 2) {
-                            startup_minute_two++;
-                            lcd_command(0x30);
-                            lcd_command(0x0c);
-                            lcd_command(0x01);
-                            display_char(startup_minute_two + '0');
-                        }
-                        else {
-                            k = 0;
-                        }
-                    }
-                }
+            if(debounce_read(0, 12)) {
+		digit_switch++;
+	    }
+            if(debounce_read(1, 2)) {
+		if(digit_switch == 0) {
+		    startup_hour++;
+		    display_char(startup_hour + '0');
+		}
+		else if(digit_switch == 1) {
+		    startup_minute_one++;
+		    display_char(startup_minute_one + '0');
+		}
+		else if(digit_switch == 2) {
+		    startup_minute_two++;
+		    display_char(startup_minute_two + '0');
+		}
+		else {
+		    k = 0;
+		}
             }
         }
         if(k == 0) {
             twilight = time_to_seconds(twilight_hour, twilight_minute_one, twilight_minute_two);
             startup_time = time_to_seconds(startup_hour, startup_minute_one, startup_minute_two);
-            RTC_TAR = RTC_TAR_TAR(60);
+            RTC_TAR = RTC_TAR_TAR(twilight-startup_time);
             RTC_CR |= RTC_CR_OSCE_MASK;
             RTC_SR |= RTC_SR_TCE_MASK;
-            k = 0;
         }
     }
 }

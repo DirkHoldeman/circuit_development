@@ -37,7 +37,7 @@ uint16_t time_to_seconds(uint8_t hour_digit, uint8_t minute_digit_one, uint8_t m
 void wait_ms(uint16_t ms);
 void wait_us(uint16_t us);
 void adc_init();
-uint8_t debounce_read(uint8_t pin, uint8_t port);
+uint8_t debounce_read(uint8_t port, uint8_t pin);
 uint16_t adc_convert();
 uint32_t voltage_to_ohms(uint16_t volts);
 uint8_t number_of_digits(uint16_t num);
