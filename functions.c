@@ -8,12 +8,10 @@ uint16_t time_to_seconds(uint8_t hour_digit, uint8_t minute_digit_one, uint8_t m
 }
 
 void wait_ms(uint16_t ms) {
-    //Needs work
     for(volatile uint32_t wait_num = (ms * 6600); wait_num; wait_num--);
 }
 
 void wait_us(uint16_t us) {
-    //Needs work
     for(volatile uint16_t wait_num = (us * 7); wait_num; wait_num--);
 }
 
@@ -32,7 +30,7 @@ void lcd_init(void) {
 }
 
 void lcd_check(void) {
-    wait_ms(5); //needs to be changed to real busy check
+    wait_ms(5);
     GPIOC_PCOR = (0xFF);
     GPIOC_PDDR = (0x00);
     GPIOD_PSOR = (1<<5);
@@ -65,52 +63,24 @@ void display_string(char *string) {
 }
 
 void adc_init() {
-    /*ADC0_CFG1*/uint32_t var = (ADC_CFG1_ADIV(0x00) | ADC_CFG1_ADICLK(0x01)) + ADC_CFG1_MODE(0x02);
-    char *stringvar = int_to_string(var);
-    display_string(stringvar);
-    wait_ms(500);
-    lcd_command(0x01);
-    /*ADC0_SC3*/uint32_t vartwo = ADC_SC3_CAL_MASK;
-    char *stringvartwo = int_to_string(vartwo);
-    display_string(stringvartwo);
-    wait_ms(500);
-    lcd_command(0x01);
-    volatile uint32_t filler = 1;
-    while(/*ADC0_SC3 & ADC_SC3_CAL_MASK*/filler < 10) {
+    ADC0_CFG1 = (ADC_CFG1_ADIV(0x00) | ADC_CFG1_ADICLK(0x01)) + ADC_CFG1_MODE(0x02);
+    ADC0_SC3 = ADC_SC3_CAL_MASK;
+    volatile uint32_t filler;
+    while(ADC0_SC3 & ADC_SC3_CAL_MASK) {
 	filler++;
-    display_string("beep!");
-    wait_ms(750);
-    lcd_command(0x01);
     }
-    display_string("beep2!");
-    wait_ms(1000);
-    lcd_command(0x01);
-    //char *fillerstring = int_to_string(filler);
-    //display_string(fillerstring);
-    //uint16_t cal_sum = ADC0_CLPS + ADC0_CLP4 + ADC0_CLP3 + ADC0_CLP2 + ADC0_CLP1 + ADC0_CLP0;
-    //cal_sum = (cal_sum / 2) | 0x8000;
-    //ADC0_PG = cal_sum;
-    //cal_sum = ADC0_CLMS + ADC0_CLM4 + ADC0_CLM3 + ADC0_CLM2 + ADC0_CLM1 + ADC0_CLM0;
-    //cal_sum = (cal_sum / 2) | 0x8000;
-    //ADC0_MG = cal_sum;
-/*    if(varthree) {
-	varthree++;
-    }
-    else {
-	varthree = 1;
-    }
-    char *stringvarthree = int_to_string(varthree);
-    display_string(stringvarthree);
-    wait_ms(1000);
-    lcd_command(0x01);*/
+    uint16_t cal_sum = ADC0_CLPS + ADC0_CLP4 + ADC0_CLP3 + ADC0_CLP2 + ADC0_CLP1 + ADC0_CLP0;
+    cal_sum = (cal_sum / 2) | 0x8000;
+    ADC0_PG = cal_sum;
+    cal_sum = ADC0_CLMS + ADC0_CLM4 + ADC0_CLM3 + ADC0_CLM2 + ADC0_CLM1 + ADC0_CLM0;
+    cal_sum = (cal_sum / 2) | 0x8000;
+    ADC0_MG = cal_sum;
 }
 
 uint16_t adc_convert() {
     ADC0_SC1A = ADC_SC1_ADCH(0x08);
-    uint8_t u = 1;
-    while(u) {
+    while(1) {
 	if(ADC0_SC1A & ADC_SC1_COCO_MASK) {
-	    u = 0;
 	    uint16_t result = (ADC0_RA & ADC_R_D(0x08));
 	    return result;
 	}
