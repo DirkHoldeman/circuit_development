@@ -18,8 +18,7 @@ uint16_t startup_time;
 uint16_t twilight;
 uint16_t voltage;
 uint32_t ohms;
-uint16_t varthree;
-uint8_t k, l;
+uint8_t k, l, result;
 uint8_t switch_pressed;
 uint8_t pressed;
 uint8_t digit_switch;
@@ -37,6 +36,7 @@ uint16_t time_to_seconds(uint8_t hour_digit, uint8_t minute_digit_one, uint8_t m
 void wait_ms(uint16_t ms);
 void wait_us(uint16_t us);
 void adc_init();
+uint8_t digital_read(uint8_t port, uint8_t pin);
 uint8_t debounce_read(uint8_t port, uint8_t pin);
 uint16_t adc_convert();
 uint32_t voltage_to_ohms(uint16_t volts);

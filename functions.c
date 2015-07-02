@@ -112,32 +112,35 @@ uint32_t voltage_to_ohms(uint16_t volts) {
     return (14000000 / ((volts * 1000) / 3000) - 14000);
 }
 
-uint8_t debounce_read(uint8_t port, uint8_t pin){
-    switch_release_confidence = 0;
-    switch_press_confidence = 0;
-    switch_pressed = 0;
-
+uint8_t digital_read(uint8_t port, uint8_t pin) {
     switch(port) {
 	case 0:
-	    uint32_t *input_port = GPIOA_PDIR;
+	    result = GPIOA_PDIR & (1<<pin);
 	    break;
 	case 1:
-	    uint32_t *input_port = GPIOB_PDIR;
+	    result = GPIOB_PDIR & (1<<pin);
 	    break;
 	case 2:
-	    uint32_t *input_port = GPIOC_PDIR;
+	    result = GPIOC_PDIR & (1<<pin);
 	    break;
 	case 3:
-	    uint32_t *input_port = GPIOD_PDIR;
+	    result = GPIOD_PDIR & (1<<pin);
 	    break;
 	case 4:
-	    uint32_t *input_port = GPIOE_PDIR;
+	    result = GPIOE_PDIR & (1<<pin);
 	    break;
 	default:
 	    break;
     }
+    return result;
+}
+
+uint8_t debounce_read(uint8_t port, uint8_t pin) {
+    switch_release_confidence = 0;
+    switch_press_confidence = 0;
+    switch_pressed = 0;
     while(1) {
-	if(input_port & (1<<pin)) {
+	if(digital_read(port, pin)) {
 	    switch_release_confidence++;
 	    switch_press_confidence = 0;
 	    if(switch_release_confidence > 500) {
@@ -153,7 +156,7 @@ uint8_t debounce_read(uint8_t port, uint8_t pin){
 	    switch_press_confidence++;
 	    switch_release_confidence = 0;
 	    if(switch_press_confidence > 500) {
-		    switch_pressed = 1;
+		switch_pressed = 1;
 	    }
 	}
     }
