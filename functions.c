@@ -81,8 +81,8 @@ uint16_t adc_convert() {
     ADC0_SC1A = ADC_SC1_ADCH(0x08);
     while(1) {
 	if(ADC0_SC1A & ADC_SC1_COCO_MASK) {
-	    uint16_t result = (ADC0_RA & ADC_R_D(0x08));
-	    return result;
+	    uint16_t adc_result = (ADC0_RA & ADC_R_D(0x08));
+	    return adc_result;
 	}
     }
 }
@@ -113,6 +113,7 @@ uint32_t voltage_to_ohms(uint16_t volts) {
 }
 
 uint8_t digital_read(uint8_t port, uint8_t pin) {
+    uint32_t result;
     switch(port) {
 	case 0:
 	    result = GPIOA_PDIR & (1<<pin);
@@ -136,9 +137,9 @@ uint8_t digital_read(uint8_t port, uint8_t pin) {
 }
 
 uint8_t debounce_read(uint8_t port, uint8_t pin) {
-    switch_release_confidence = 0;
-    switch_press_confidence = 0;
-    switch_pressed = 0;
+    uint16_t switch_release_confidence = 0;
+    uint16_t switch_press_confidence = 0;
+    uint16_t switch_pressed = 0;
     while(1) {
 	if(digital_read(port, pin)) {
 	    switch_release_confidence++;
@@ -169,15 +170,15 @@ void alarm_setup(void) {
     if(RTC_SR & RTC_SR_TIF_MASK) {
          RTC_TSR = 0x00;
     }
-    digit_switch = 0;
-    twilight_hour = 0;
-    twilight_minute_one = 0;
-    twilight_minute_two = 0;
-    startup_hour = 0;
-    startup_minute_one = 0;
-    startup_minute_two = 0;
-    k = 1;
-    while(k) {
+    uint8_t digit_switch = 0;
+    uint8_t twilight_hour = 0;
+    uint8_t twilight_minute_one = 0;
+    uint8_t twilight_minute_two = 0;
+    uint8_t startup_hour = 0;
+    uint8_t startup_minute_one = 0;
+    uint8_t startup_minute_two = 0;
+    uint8_t loop_run = 1;
+    while(loop_run) {
 	if(GPIOA_PDIR & (1<<13)) {
             if(debounce_read(0, 12)) {
 		digit_switch++;
@@ -218,11 +219,11 @@ void alarm_setup(void) {
 		    display_char(startup_minute_two + '0');
 		}
 		else {
-		    k = 0;
+		    loop_run = 0;
 		}
             }
         }
-        if(k == 0) {
+        if(loop_run == 0) {
             twilight = time_to_seconds(twilight_hour, twilight_minute_one, twilight_minute_two);
             startup_time = time_to_seconds(startup_hour, startup_minute_one, startup_minute_two);
             RTC_TAR = RTC_TAR_TAR(twilight-startup_time);

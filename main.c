@@ -13,11 +13,11 @@ int main(void) {
     PORTB_PCR2 = PORT_PCR_MUX(0x1); //receives button presses for startup_time and twilight
     PORTA_PCR12 = PORT_PCR_MUX(0x1); //switches digits for B2
     PORTA_PCR13 = PORT_PCR_MUX(0x1); //switches between startup_time and twilight
-    PORTD_PCR7 = PORT_PCR_MUX(0x1); //debug led
+    PORTD_PCR7 = PORT_PCR_MUX(0x1); //debug
     PORTD_PCR4 = PORT_PCR_MUX(0x1); //lcd RS
     PORTD_PCR5 = PORT_PCR_MUX(0x1); //lcd R/W
     PORTD_PCR6 = PORT_PCR_MUX(0x1); //lcd E
-    GPIOD_PDDR = (0xFF);
+    GPIOD_PDDR = (0x7F);
     lcd_init();
     adc_init();
     while(1) {
